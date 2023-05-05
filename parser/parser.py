@@ -483,7 +483,7 @@ class Parser:
         the call. Then each time there is a '(' call 'finish_call` using the previously parsed expression
         as the callee. Then loop to see if the result itself is called.
         """
-        expr = self.primary()
+        expr = self.grouping()
 
         while True:
             if self.next_token_matches([TokenType.LEFT_PAREN]):
@@ -524,8 +524,47 @@ class Parser:
             self.consume_token_if_matching(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Grouping(expr)
 
+        return self.lox_list_index()
+
+    # todo "LoxListIndex" needs to have a reference to list itself
+    def lox_list_index(self) -> Expr:
+        """
+        lox_list_index -> lox_list ( "[" logic_or "]" )* ;
+        """
+
+        expr = self.lox_list()
+
+        if self.next_token_matches([TokenType.LEFT_BRACKET]):
+            self.consume_token()  # Consume '['
+            index = self.logic_or()
+            self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list index.")
+            return LoxListIndex(expr, index)
+
+        return expr
+
+    def lox_list(self) -> Expr:
+        """
+        lox_list -> primary | "[" ( logic_or ( "," logic_or )*  )? "]" ;
+        """
+        if self.next_token_matches([TokenType.LEFT_BRACKET]):
+            self.consume_token()  # Consume '['
+            items: list[Expr] = []
+
+            # Handle the zero aruments case by checking if the next token is ')'
+            if not self.next_token_matches([TokenType.RIGHT_BRACKET]):
+                # Parse the first item
+                items.append(self.logic_or())
+                # Parse the rest of the comma-seperated arguments
+                while self.next_token_matches([TokenType.COMMA]):
+                    self.consume_token()  # Consume ','
+                    items.append(self.logic_or())
+
+            self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list expression.")
+            return LoxList(items)
+
         return self.primary()
 
+    # ? Catch all method expressions of the highest precedence or whose precedence is irrelevant.
     def primary(self) -> Expr:
         # Convert Lox literals to Python literals
         if self.next_token_matches([TokenType.TRUE]):

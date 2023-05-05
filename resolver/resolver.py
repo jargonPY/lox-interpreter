@@ -233,3 +233,10 @@ class Resolver(ExprVisitor, StmtVisitor):
 
         for argument in expr.arguments:
             self.resolve_expression(argument)
+
+    def visitLoxListIndexExpr(self, expr: LoxListIndex) -> None:
+        self.resolve_expression(expr.index)
+
+    def visitLoxListExpr(self, expr: LoxList) -> None:
+        for item in expr.items:
+            self.resolve_expression(item)
