@@ -7,7 +7,6 @@ from data_types.keywords import KEYWORDS
 # todo showing that a corresponding method is missing, this will be useful for extending the syntax in the future
 
 
-# ? Doesn't build "Expr" but rather a list of Tokens that represent an expression
 class BuildTokens:
     def __init__(self) -> None:
         self.tokens: list[Token] = []
@@ -28,7 +27,7 @@ class BuildTokens:
         self.tokens.append(Token(TokenType.STRING, string, string))
         return self
 
-    def num(self, number: int) -> Self:
+    def num(self, number: float) -> Self:
         self.tokens.append(Token(TokenType.NUMBER, str(number), number))
         return self
 

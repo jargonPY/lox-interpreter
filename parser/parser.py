@@ -257,9 +257,9 @@ class Parser:
         """
         self.consume_token()  # Consumes the 'while' token
 
-        self.consume_token_if_matching(TokenType.SEMICOLON, MISSING_WHILE_OPEN_BRACKET)
+        self.consume_token_if_matching(TokenType.LEFT_PAREN, MISSING_WHILE_OPEN_BRACKET)
         condition_expr = self.expression()
-        self.consume_token_if_matching(TokenType.SEMICOLON, MISSING_WHILE_CLOSE_BRACKET)
+        self.consume_token_if_matching(TokenType.RIGHT_PAREN, MISSING_WHILE_CLOSE_BRACKET)
         body = self.statement()
         return WhileStmt(condition_expr, body)
 
@@ -310,7 +310,7 @@ class Parser:
         If the condition is omitted, set the condition to 'true' to make an infinite loop.
         """
         if condition is None:
-            condition = Literal("true")
+            condition = Literal(True)
         body = WhileStmt(condition, body)
 
         """

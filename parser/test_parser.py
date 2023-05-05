@@ -3,23 +3,27 @@ from parser.parser import Parser
 from data_types.lexical_token import Token
 from data_types.errors import ParseError
 from data_types.error_messages import *
+from data_types.stmt import ExpressionStmt
 from test_utils.build_tokens import BuildTokens
 from test_utils.error_reporter import TestErrorReporter
 from test_utils.builders.for_statement_builder import ForStmtTokenBuilder
+from test_utils.builders.expression_builders import *
+from test_utils.builders.statement_builders import *
 
 # ! If "parse()" does not throw an error, how to test that an error was thrown and properly handled?
 # ! Focus on user-observed behaviour. The user would see an error message, so test that the same error message is visible.
 # ! Another user is the interpreter so test that the correct set of expressions is returned (i.e. that synchronization works).
 
-# todo extend reporter type include "message" attribute
+# todo extend reporter type include "message" attribute.
 # todo add the hard-coded messages to "error.py" and import them into parser and into test, that way its easy to change the message.
+# todo come up with a better way to wrap "Expr" in "ExpressionStmt" and "Expr" / "Stmt" in "[]".
 
 
 def setup_parser() -> Parser:
     return Parser(TestErrorReporter())
 
 
-""" ========================= Parse Statement Tests ========================= """
+""" ========================= Parse Variable Declaration Tests ========================= """
 
 
 def test_parse_variable_declaration_with_num():
@@ -28,7 +32,8 @@ def test_parse_variable_declaration_with_num():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[var x = 10]"
+    expected_stmt = build_variable_declaration(variable_name="x", initializer=build_literal(10))
+    assert statement == [expected_stmt]
 
 
 def test_parse_variable_declaration_with_expression():
@@ -37,7 +42,12 @@ def test_parse_variable_declaration_with_expression():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[var x = (10 + 100)]"
+    var_initializer = build_binary(build_literal(10), "add", build_literal(100))
+    expected_stmt = build_variable_declaration(variable_name="x", initializer=var_initializer)
+    assert statement == [expected_stmt]
+
+
+""" ========================= Parse Variable Assignment Tests ========================= """
 
 
 def test_parse_variable_assignment():
@@ -46,7 +56,9 @@ def test_parse_variable_assignment():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[x = (10 + 100)]"
+    value = build_binary(build_literal(10), "add", build_literal(100))
+    expected_stmt = build_assign("x", value)
+    assert statement == [ExpressionStmt(expected_stmt)]
 
 
 def test_parse_invalid_assignment():
@@ -59,24 +71,64 @@ def test_parse_invalid_assignment():
     assert parser.error_reporter.message == INVALID_ASSIGNMENT
 
 
+""" ========================= Parse Block Statement Tests ========================= """
+
+
 def test_parse_block():
     pass
 
 
-def test_parse_while_loop():
-    pass
+""" ========================= Parse If Statement Tests ========================= """
 
 
 def test_parse_if_statement():
-    pass
+    tokens = BuildTokens().keyword("if").open_paren().keyword("true").close_paren().keyword("print").num("if").build()
+    parser = setup_parser()
+
+    statement = parser.parse(tokens)
+
+    condition = build_literal(True)
+    then_branch = build_print(build_literal("if"))
+    expected_stmt = build_if(condition, then_branch, None)
+    assert statement == [expected_stmt]
+
+
+""" ========================= Parse Logical Expressions ("and" / "or") Tests ========================= """
 
 
 def test_parse_or_expression():
-    pass
+    tokens = BuildTokens().num(10).keyword("or").num(100).build()
+    parser = setup_parser()
+
+    expressions = parser.parse(tokens)
+
+    expected_expr = build_logical(build_literal(10), "or", build_literal(100))
+    assert expressions == [ExpressionStmt(expected_expr)]
 
 
 def test_parse_and_expression():
-    pass
+    tokens = BuildTokens().num(10).keyword("and").num(100).build()
+    parser = setup_parser()
+
+    expressions = parser.parse(tokens)
+
+    expected_expr = build_logical(build_literal(10), "and", build_literal(100))
+    assert expressions == [ExpressionStmt(expected_expr)]
+
+
+""" ========================= Parse While Statement Tests ========================= """
+
+
+def test_parse_while_loop():
+    tokens = BuildTokens().keyword("while").open_paren().keyword("true").close_paren().keyword("print").num(10).build()
+    parser = setup_parser()
+
+    statement = parser.parse(tokens)
+
+    condition = build_literal(True)
+    body = build_print(build_literal(10))
+    expected_stmt = build_while(condition, body)
+    assert statement == [expected_stmt]
 
 
 """ ========================= For Statement Tests ========================= """
@@ -88,7 +140,9 @@ def test_parse_for_loop_with_empty_block():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[while (true) {[]}]"
+    expected_stmt = build_while(build_literal(True), build_block([]))
+    assert statement == [expected_stmt]
+    # assert repr(statement) == "[while (true) {[]}]"
 
 
 def test_parse_for_loop_with_single_statement():
@@ -99,7 +153,10 @@ def test_parse_for_loop_with_single_statement():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[while (true) print i;]"
+    body = build_print(build_variable(variable_name="i"))
+    expected_stmt = build_while(build_literal(True), body)
+    assert statement == [expected_stmt]
+    # assert repr(statement) == "[while (true) print i;]"
 
 
 def test_parse_for_loop_with_initializer():
@@ -115,7 +172,11 @@ def test_parse_for_loop_with_initializer():
 
     statement = parser.parse(tokens)
 
-    assert repr(statement) == "[{['var i = 0', 'while (true) {[]}']}]"
+    var_decl = build_variable_declaration(variable_name="i", initializer=build_literal(0))
+    while_loop = build_while(build_literal(True), build_block([]))
+    expected_stmt = build_block([var_decl, while_loop])
+    assert statement == [expected_stmt]
+    # assert repr(statement) == "[{['var i = 0', 'while (true) {[]}']}]"
 
 
 """ ========================= Function Call Expression Tests ========================= """
@@ -126,9 +187,10 @@ def test_parse_function_call_with_zero_args():
     tokens = BuildTokens().identifier("functionName").open_paren().close_paren().build()
 
     statement = parser.parse(tokens)
-    print("ST: ", statement[0])
 
-    assert repr(statement) == "[functionName([])]"
+    callee = build_variable(variable_name="functionName")
+    expected_expr = build_function_call(callee, [])
+    assert statement == [ExpressionStmt(expected_expr)]
 
 
 """ ========================= Parse Expression Tests ========================= """
@@ -142,7 +204,8 @@ def test_parse_literal():
 
     expressions = parser.parse(tokens)
 
-    assert repr(expressions) == "[1234]"
+    expected_expr = build_literal(1234)
+    assert expressions == [ExpressionStmt(expected_expr)]
 
 
 def test_parse_binary():
@@ -151,7 +214,8 @@ def test_parse_binary():
 
     expressions = parser.parse(tokens)
 
-    assert repr(expressions) == "[(1234 + 2124)]"
+    expected_expr = build_binary(build_literal(1234), "add", build_literal(2124))
+    assert expressions == [ExpressionStmt(expected_expr)]
 
 
 def test_parse_div_precedence_right():
@@ -160,7 +224,10 @@ def test_parse_div_precedence_right():
 
     expressions = parser.parse(tokens)
 
-    assert repr(expressions) == "[(1234 + (2124 / 4))]"
+    left_expr = build_literal(1234)
+    right_expr = build_binary(build_literal(2124), "divide", build_literal(4))
+    expected_expr = build_binary(left_expr, "add", right_expr)
+    assert expressions == [ExpressionStmt(expected_expr)]
 
 
 def test_parse_div_precedence_left():
@@ -169,7 +236,10 @@ def test_parse_div_precedence_left():
 
     expressions = parser.parse(tokens)
 
-    assert repr(expressions) == "[((1234 / 2124) + 4)]"
+    left_expr = build_binary(build_literal(1234), "divide", build_literal(2124))
+    right_expr = build_literal(4)
+    expected_expr = build_binary(left_expr, "add", right_expr)
+    assert expressions == [ExpressionStmt(expected_expr)]
 
 
 def test_multiple_expressions():
@@ -178,7 +248,9 @@ def test_multiple_expressions():
 
     expressions = parser.parse(tokens)
 
-    assert repr(expressions) == "[(1234 + 4), (10 / 2124)]"
+    first_expected_expr = build_binary(build_literal(1234), "add", build_literal(4))
+    second_expected_expr = build_binary(build_literal(10), "divide", build_literal(2124))
+    assert expressions == [ExpressionStmt(first_expected_expr), ExpressionStmt(second_expected_expr)]
 
 
 """ ========================= Invalid Expression Exception Tests ========================= """

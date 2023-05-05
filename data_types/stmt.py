@@ -50,6 +50,10 @@ class Stmt(ABC):
     def __repr__(self) -> str:
         pass
 
+    @abstractmethod
+    def __eq__(self, other: object) -> bool:
+        pass
+
 
 class ExpressionStmt(Stmt):
     def __init__(self, expr: Expr) -> None:
@@ -61,6 +65,11 @@ class ExpressionStmt(Stmt):
     def __repr__(self) -> str:
         return repr(self.expression)
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, ExpressionStmt):
+            return self.expression == other.expression
+        return False
+
 
 class PrintStmt(Stmt):
     def __init__(self, expr: Expr) -> None:
@@ -71,6 +80,11 @@ class PrintStmt(Stmt):
 
     def __repr__(self) -> str:
         return "print" + " " + repr(self.expression) + ";"
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, PrintStmt):
+            return self.expression == other.expression
+        return False
 
 
 class VarStmt(Stmt):
@@ -84,6 +98,11 @@ class VarStmt(Stmt):
     def __repr__(self) -> str:
         return f"var {self.variable_name.lexeme} = {self.initializer.__repr__()}"
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, VarStmt):
+            return self.variable_name == other.variable_name and self.initializer == other.initializer
+        return False
+
 
 class BlockStmt(Stmt):
     def __init__(self, statements: list[Stmt]) -> None:
@@ -95,6 +114,11 @@ class BlockStmt(Stmt):
     def __repr__(self) -> str:
         return "{" + f"{[repr(statement) for statement in self.statements]}" + "}"
         # return repr([repr(statement) for statement in self.statements])
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, BlockStmt):
+            return self.statements == other.statements
+        return False
 
 
 class IfStmt(Stmt):
@@ -109,6 +133,15 @@ class IfStmt(Stmt):
     def __repr__(self) -> str:
         return repr(self.condition)
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, IfStmt):
+            return (
+                self.condition == other.condition
+                and self.then_branch == other.then_branch
+                and self.else_branch == other.else_branch
+            )
+        return False
+
 
 class WhileStmt(Stmt):
     def __init__(self, condition: Expr, body: Stmt) -> None:
@@ -120,6 +153,11 @@ class WhileStmt(Stmt):
 
     def __repr__(self) -> str:
         return "while" + " (" + repr(self.condition) + ") " + repr(self.body)
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, WhileStmt):
+            return self.condition == other.condition and self.body == other.body
+        return False
 
 
 class FunctionStmt(Stmt):
@@ -134,6 +172,11 @@ class FunctionStmt(Stmt):
     def __repr__(self) -> str:
         return "fun" + " " + repr(self.func_name) + "(" + repr(self.params) + ")"
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, FunctionStmt):
+            return self.func_name == other.func_name and self.params == other.params and self.body == other.body
+        return False
+
 
 class ReturnStmt(Stmt):
     def __init__(self, keyword: Token, value: Expr | None) -> None:
@@ -145,6 +188,11 @@ class ReturnStmt(Stmt):
 
     def __repr__(self) -> str:
         return "return" + " " + repr(self.value)
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, ReturnStmt):
+            return self.keyword == other.keyword and self.value == other.value
+        return False
 
 
 # class ClassStmt(Stmt):

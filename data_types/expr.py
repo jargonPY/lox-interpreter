@@ -53,6 +53,10 @@ class Expr(ABC):
     def __repr__(self) -> str:
         pass
 
+    @abstractmethod
+    def __eq__(self, other: object) -> bool:
+        pass
+
 
 class Call(Expr):
     def __init__(self, callee: Expr, closing_paren: Token, arguments: list[Expr]) -> None:
@@ -67,6 +71,11 @@ class Call(Expr):
     def __repr__(self) -> str:
         return repr(self.callee) + "(" + repr(self.arguments) + ")"
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Call):
+            return self.callee == other.callee and self.arguments == other.arguments
+        return False
+
 
 class Grouping(Expr):
     def __init__(self, expression: Expr) -> None:
@@ -77,6 +86,11 @@ class Grouping(Expr):
 
     def __repr__(self) -> str:
         return "(" + self.expression.__repr__() + ")"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Grouping):
+            return self.expression == other.expression
+        return False
 
 
 class Binary(Expr):
@@ -91,6 +105,11 @@ class Binary(Expr):
     def __repr__(self) -> str:
         return "(" + self.left.__repr__() + " " + self.operator.lexeme + " " + self.right.__repr__() + ")"
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Binary):
+            return self.left == other.left and self.operator == other.operator and self.right == other.right
+        return False
+
 
 class Unary(Expr):
     def __init__(self, operator: Token, right_side: Expr) -> None:
@@ -103,9 +122,14 @@ class Unary(Expr):
     def __repr__(self) -> str:
         return self.operator.lexeme + self.right_side.__repr__()
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Unary):
+            return self.operator == other.operator and self.right_side == other.right_side
+        return False
+
 
 class Literal(Expr):
-    def __init__(self, value: str | float | None) -> None:
+    def __init__(self, value: object) -> None:
         self.value = value
 
     def accept(self, visitor: ExprVisitor):
@@ -113,6 +137,11 @@ class Literal(Expr):
 
     def __repr__(self) -> str:
         return str(self.value)
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Literal):
+            return self.value == other.value
+        return False
 
 
 class Variable(Expr):
@@ -124,6 +153,14 @@ class Variable(Expr):
 
     def __repr__(self) -> str:
         return self.variable_name.lexeme
+
+    def __hash__(self) -> int:
+        return hash(self.variable_name)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Variable):
+            return self.variable_name == other.variable_name
+        return False
 
 
 class Assign(Expr):
@@ -137,6 +174,21 @@ class Assign(Expr):
     def __repr__(self) -> str:
         return self.variable_name.lexeme + " = " + self.value.__repr__()
 
+    def __hash__(self) -> int:
+        """
+        Note that for hashable objects, the __hash__() method should be implemented consistently
+        with the __eq__() method, such that two objects that compare equal have the same hash value.
+        If this is not the case, unexpected behavior can occur when using the object as a key in a
+        dictionary or as an element in a set.
+        """
+        # todo fix "__hash__" to match "__eq__", however that will cause another issue it might not match the "Variable" "__hash__", which will break the resolver.
+        return hash(self.variable_name)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Assign):
+            return self.variable_name == other.variable_name and self.value == other.value
+        return False
+
 
 class Logical(Expr):
     def __init__(self, left_side: Expr, operator: Token, right_side: Expr) -> None:
@@ -149,6 +201,15 @@ class Logical(Expr):
 
     def __repr__(self) -> str:
         return self.left_side.__repr__() + " " + self.operator.lexeme + " " + self.right_side.__repr__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Logical):
+            return (
+                self.operator == other.operator
+                and self.left_side == other.left_side
+                and self.right_side == other.right_side
+            )
+        return False
 
 
 # class Get(Expr):

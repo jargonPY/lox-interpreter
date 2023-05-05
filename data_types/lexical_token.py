@@ -8,6 +8,9 @@ class Token:
         self.lexeme = lexeme
         self.literal = literal
 
+    def __hash__(self) -> int:
+        return hash((self.type, self.lexeme, self.literal))
+
     def __eq__(self, other: object):
         if not isinstance(other, Token):
             return False
