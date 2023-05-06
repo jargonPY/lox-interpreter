@@ -292,3 +292,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.resolve_expression(expr.condition)
         self.resolve_expression(expr.truthy)
         self.resolve_expression(expr.falsy)
+
+    def visitLoxListIndexExpr(self, expr: LoxListIndex) -> None:
+        self.resolve_expression(expr.index)
+
+    def visitLoxListExpr(self, expr: LoxList) -> None:
+        for item in expr.items:
+            self.resolve_expression(item)

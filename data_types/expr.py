@@ -8,6 +8,14 @@ class ExprVisitor(ABC):
         pass
 
     @abstractmethod
+    def visitLoxListIndexExpr(self, expr: "LoxListIndex"):
+        pass
+
+    @abstractmethod
+    def visitLoxListExpr(self, expr: "LoxList"):
+        pass
+
+    @abstractmethod
     def visitBinaryExpr(self, expr: "Binary"):
         pass
 
@@ -98,6 +106,39 @@ class Grouping(Expr):
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Grouping):
             return self.expression == other.expression
+        return False
+
+
+class LoxListIndex(Expr):
+    def __init__(self, lox_list: Expr, index: Expr) -> None:
+        self.lox_list = lox_list
+        self.index = index
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitLoxListIndexExpr(self)
+
+    def __repr__(self) -> str:
+        return "(" + repr(self.lox_list) + "[" + repr(self.index) + "])"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LoxListIndex):
+            return self.lox_list == other.lox_list and self.index == other.index
+        return False
+
+
+class LoxList(Expr):
+    def __init__(self, items: list[Expr]) -> None:
+        self.items = items
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitLoxListExpr(self)
+
+    def __repr__(self) -> str:
+        return "([" + repr(self.items) + "])"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LoxList):
+            return self.items == other.items
         return False
 
 

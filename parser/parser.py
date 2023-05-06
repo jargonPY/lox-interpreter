@@ -404,11 +404,15 @@ class Parser:
 
         Updated assignment expression grammar:
 
-        assignment -> (call ".")? IDENTIFIER "=" assignment | ternary;
+        assignment -> (call ".")? IDENTIFIER ( "[" logic_or "]" )* "=" assignment | ternary;
 
         Extends the rule for assignment to allow dotted identifiers on the left-hand side.
+
+        This would allow for: x[0] = 100;
         """
         expr = self.ternary()
+
+        # todo implement assignment to list index: x[0] = 100;
 
         if self.next_token_matches([TokenType.EQUAL]):
             equals = self.consume_token()
@@ -582,8 +586,58 @@ class Parser:
             self.consume_token_if_matching(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             return Grouping(expr)
 
+        return self.lox_list_index()
+
+    # todo "LoxListIndex" needs to have a reference to list itself
+    def lox_list_index(self) -> Expr:
+        """
+        lox_list_index -> lox_list ( "[" logic_or "]" )* ;
+
+        This grammar rule allows for:
+            list[0]();
+
+        but not for:
+            func()[0];
+        """
+
+        expr = self.lox_list()
+
+        # todo change the definition of the grammar rule to acommedate both
+        if self.next_token_matches([TokenType.LEFT_PAREN]):
+            self.consume_token()
+            expr = self.finish_call(expr)
+
+        if self.next_token_matches([TokenType.LEFT_BRACKET]):
+            self.consume_token()  # Consume '['
+            index = self.logic_or()
+            self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list index.")
+            return LoxListIndex(expr, index)
+
+        return expr
+
+    def lox_list(self) -> Expr:
+        """
+        lox_list -> primary | "[" ( logic_or ( "," logic_or )*  )? "]" ;
+        """
+        if self.next_token_matches([TokenType.LEFT_BRACKET]):
+            self.consume_token()  # Consume '['
+            items: list[Expr] = []
+
+            # Handle the zero aruments case by checking if the next token is ')'
+            if not self.next_token_matches([TokenType.RIGHT_BRACKET]):
+                # Parse the first item
+                items.append(self.logic_or())
+                # Parse the rest of the comma-seperated arguments
+                while self.next_token_matches([TokenType.COMMA]):
+                    self.consume_token()  # Consume ','
+                    items.append(self.logic_or())
+
+            self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list expression.")
+            return LoxList(items)
+
         return self.primary()
 
+    # ? Catch all method expressions of the highest precedence or whose precedence is irrelevant.
     def primary(self) -> Expr:
         # Convert Lox literals to Python literals
         if self.next_token_matches([TokenType.TRUE]):

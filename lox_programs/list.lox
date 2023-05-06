@@ -1,0 +1,15 @@
+print [2, 4 + 4][0];
+print [2, 4 + 4][1];
+
+fun printHello() {
+    return [10, 20];
+}
+
+print [printHello][0]();
+
+print printHello()[0];
+
+var x = [100];
+print x;
+
+x[0] = 100;

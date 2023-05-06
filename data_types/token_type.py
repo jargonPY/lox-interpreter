@@ -7,6 +7,8 @@ class TokenType(Enum):
     RIGHT_PAREN = 2
     LEFT_BRACE = 3
     RIGHT_BRACE = 4
+    LEFT_BRACKET = 41
+    RIGHT_BRACKET = 42
     COMMA = 5
     DOT = 6
     MINUS = 7
