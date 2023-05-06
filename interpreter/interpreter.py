@@ -351,6 +351,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
         # Should be unreachable
         raise LoxRuntimeError(expr.operator, INVALID_BINARY_EXPRESSION)
 
+    def visitTernaryExpr(self, expr: "Ternary") -> object:
+        condition = self.evaluate(expr.condition)
+
+        if self.is_truthy(condition):
+            return self.evaluate(expr.truthy)
+
+        return self.evaluate(expr.falsy)
+
     # todo implement method properly
     def visitUnaryExpr(self, expr: "Unary") -> object:
         return expr.operator

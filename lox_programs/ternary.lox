@@ -1,0 +1,13 @@
+print true and false ? "should not be truthy" : "should be falsy";
+
+print true or false ? "should be truthy" : "should not be falsy";
+
+print 41 + 1 == 42 ? "should be truthy" : "should not be falsy";
+
+print 41 + 1 != 42 ? "should not be truthy" : "should be falsy";
+
+print true ? 10 ? "should be nested truthy" : "should not be nested falsy" : "should not be outer falsy";
+
+print true ? false ? "should not be nested truthy" : "should be nested falsy" : "should not be outer falsy";
+
+print false ? false ? "should not be nested truthy" : "should not be nested falsy" : "should be outer falsy";

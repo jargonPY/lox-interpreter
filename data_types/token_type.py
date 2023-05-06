@@ -14,6 +14,8 @@ class TokenType(Enum):
     SEMICOLON = 9
     SLASH = 10
     STAR = 11
+    QUESTION = 40
+    COLON = 41
 
     # One or two character tokens
     BANG = 12

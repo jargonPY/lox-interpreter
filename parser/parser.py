@@ -400,15 +400,15 @@ class Parser:
         """
         Note assignment is considered an expression.
 
-        assignment -> IDENTIFIER "=" assignment | logic_or;
+        assignment -> IDENTIFIER "=" assignment | ternary;
 
         Updated assignment expression grammar:
 
-        assignment -> (call ".")? IDENTIFIER "=" assignment | logic_or;
+        assignment -> (call ".")? IDENTIFIER "=" assignment | ternary;
 
         Extends the rule for assignment to allow dotted identifiers on the left-hand side.
         """
-        expr = self.logic_or()
+        expr = self.ternary()
 
         if self.next_token_matches([TokenType.EQUAL]):
             equals = self.consume_token()
@@ -420,7 +420,23 @@ class Parser:
             if isinstance(expr, Get):
                 return Set(expr.property_name, expr.obj, value)
 
+            # ? Why does this raise "ParseError" instead of calling "consume_token_if_matching" like other methods?
+            # todo change to "consume_token_if_matching"
             raise ParseError(equals, INVALID_ASSIGNMENT)
+
+        return expr
+
+    def ternary(self) -> Expr:
+        expr = self.logic_or()
+
+        if self.next_token_matches([TokenType.QUESTION]):
+            self.consume_token()  # Consumes the "?" token
+            truthy = self.ternary()
+
+            self.consume_token_if_matching(TokenType.COLON, "Expect ':' after ternary truthy expression.")
+
+            falsy = self.ternary()
+            return Ternary(expr, truthy, falsy)
 
         return expr
 

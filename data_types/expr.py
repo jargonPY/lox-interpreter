@@ -12,6 +12,10 @@ class ExprVisitor(ABC):
         pass
 
     @abstractmethod
+    def visitTernaryExpr(self, expr: "Ternary"):
+        pass
+
+    @abstractmethod
     def visitUnaryExpr(self, expr: "Unary"):
         pass
 
@@ -112,6 +116,24 @@ class Binary(Expr):
     def __eq__(self, other) -> bool:
         if isinstance(other, Binary):
             return self.left == other.left and self.operator == other.operator and self.right == other.right
+        return False
+
+
+class Ternary(Expr):
+    def __init__(self, condition: Expr, truthy: Expr, falsy: Expr) -> None:
+        self.condition = condition
+        self.truthy = truthy
+        self.falsy = falsy
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitTernaryExpr(self)
+
+    def __repr__(self) -> str:
+        return "(" + repr(self.condition) + " ? " + repr(self.truthy) + " : " + repr(self.falsy) + ")"
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Ternary):
+            return self.condition == other.condition and self.truthy == other.truthy and self.falsy == other.falsy
         return False
 
 

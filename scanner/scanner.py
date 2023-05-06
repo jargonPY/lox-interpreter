@@ -116,6 +116,10 @@ class Scanner:
                 token = Token(TokenType.LEFT_BRACE, curr_char)
             elif curr_char == "}":
                 token = Token(TokenType.RIGHT_BRACE, curr_char)
+            elif curr_char == "?":
+                token = Token(TokenType.QUESTION, curr_char)
+            elif curr_char == ":":
+                token = Token(TokenType.COLON, curr_char)
 
             elif curr_char == "/n":
                 self.line += 1

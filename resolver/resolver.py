@@ -287,3 +287,8 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visitSetExpr(self, expr: "Set") -> None:
         self.resolve_expression(expr.obj)
         self.resolve_expression(expr.value)
+
+    def visitTernaryExpr(self, expr: "Ternary") -> None:
+        self.resolve_expression(expr.condition)
+        self.resolve_expression(expr.truthy)
+        self.resolve_expression(expr.falsy)
