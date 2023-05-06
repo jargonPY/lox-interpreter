@@ -340,7 +340,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             return None
             # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
 
-        if len(lox_list) != index + 1:
+        if len(lox_list) <= index:
             return None
             # raise LoxRuntimeError(lox_list, "IndexError list index out of range")
 

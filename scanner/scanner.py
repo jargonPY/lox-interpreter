@@ -81,6 +81,9 @@ class Scanner:
     def scan(self, text: str) -> list[Token]:
         self._reset_scanner(text)
 
+        # todo add support of "_" so that names can have underscores ex. print_hello
+        # todo add support for comments
+
         while not self.isEOF():
             curr_char = self.consume_char()
 

@@ -380,8 +380,13 @@ class Parser:
         Note assignment is considered an expression.
 
         assignment -> IDENTIFIER "=" assignment | logic_or;
+
+        assignment -> IDENTIFIER ( "[" logic_or "]" )* "=" assignment | logic_or;
+        This would allow for: x[0] = 100;
         """
         expr = self.logic_or()
+
+        # todo implement assignment to list index: x[0] = 100;
 
         if self.next_token_matches([TokenType.EQUAL]):
             equals = self.consume_token()
@@ -530,9 +535,20 @@ class Parser:
     def lox_list_index(self) -> Expr:
         """
         lox_list_index -> lox_list ( "[" logic_or "]" )* ;
+
+        This grammar rule allows for:
+            list[0]();
+
+        but not for:
+            func()[0];
         """
 
         expr = self.lox_list()
+
+        # todo change the definition of the grammar rule to acommedate both
+        if self.next_token_matches([TokenType.LEFT_PAREN]):
+            self.consume_token()
+            expr = self.finish_call(expr)
 
         if self.next_token_matches([TokenType.LEFT_BRACKET]):
             self.consume_token()  # Consume '['
