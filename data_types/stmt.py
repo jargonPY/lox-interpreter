@@ -36,9 +36,9 @@ class StmtVisitor(ABC):
     def visitReturnStmt(self, stmt: "ReturnStmt"):
         pass
 
-    # @abstractmethod
-    # def visitClassStmt(self, stmt: "ClassStmt"):
-    #     pass
+    @abstractmethod
+    def visitClassStmt(self, stmt: "ClassStmt"):
+        pass
 
 
 class Stmt(ABC):
@@ -195,14 +195,18 @@ class ReturnStmt(Stmt):
         return False
 
 
-# class ClassStmt(Stmt):
-#     def __init__(self, name: Token, super_class: Variable, methods: list[FunctionStmt]) -> None:
-#         self.name = name
-#         self.super_class = super_class
-#         self.methods = methods
+class ClassStmt(Stmt):
+    def __init__(self, name: Token, methods: list[FunctionStmt]) -> None:
+        self.name = name
+        self.methods = methods
 
-#     def accept(self, visitor: StmtVisitor):
-#         return visitor.visitClassStmt(self)
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visitClassStmt(self)
 
-#     def __repr__(self) -> str:
-#         return self.name.lexeme
+    def __repr__(self) -> str:
+        return "class" + " " + repr(self.name)
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, ClassStmt):
+            return self.name == other.name and self.methods == other.methods
+        return False

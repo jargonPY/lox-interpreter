@@ -9,6 +9,7 @@ from interpreter.protocols import EnvironmentProtocol
 from interpreter.environment import Environment
 from interpreter.helpers import is_operand_of_type_float, stringify, is_equal
 from interpreter.lox_callable import LoxCallable, LoxFunction, Clock
+from interpreter.lox_class import LoxClass, LoxInstance
 from resolver.resolver import ResolvedVars
 
 """
@@ -133,6 +134,22 @@ class Interpreter(ExprVisitor, StmtVisitor):
             value = self.evaluate(stmt.initializer)
         self.environment.define(stmt.variable_name.lexeme, value)
 
+    def visitClassStmt(self, stmt: "ClassStmt") -> None:
+        """
+        The two-stage variable binding process (defining and then assigning) allows references
+        to the class inside its own methods.
+        """
+        self.environment.define(stmt.name.lexeme, None)
+
+        # Convert each method declaration into a LoxFunction object (the runtime representation).
+        methods = {}
+        for method in stmt.methods:
+            lox_function = LoxFunction(method, self.environment)
+            methods[method.func_name.lexeme] = lox_function
+
+        lox_class = LoxClass(stmt.name.lexeme, methods)
+        self.environment.assign(stmt.name, lox_class)
+
     def visitFunctionStmt(self, stmt: "FunctionStmt") -> None:
         """
         Similar to how we interpret other literal expressions. We take a function
@@ -177,6 +194,27 @@ class Interpreter(ExprVisitor, StmtVisitor):
             raise LoxRuntimeError(expr.closing_paren, f"Expected {callee.arity()} arguments but got {len(arguments)}.")
 
         return callee.call(self, arguments)
+
+    def visitGetExpr(self, expr: "Get") -> object:
+        obj = self.evaluate(expr.obj)
+
+        if isinstance(obj, LoxInstance):
+            return obj.get(expr.property_name)
+
+        raise LoxRuntimeError(expr.property_name, "Only class instances have properties.")
+
+    def visitSetExpr(self, expr: "Set") -> object:
+        obj = self.evaluate(expr.obj)
+
+        if not isinstance(obj, LoxInstance):
+            raise LoxRuntimeError(expr.property_name, "Only class instances have properties.")
+
+        value = self.evaluate(expr.value)
+        obj.set(expr.property_name, value)
+        return value
+
+    def visitThisExpr(self, expr: "This") -> object:
+        return self.lookup_variable(expr.keyword, expr)
 
     def visitVariableExpr(self, expr: "Variable") -> object:
         # return self.environment.get(expr.variable_name)

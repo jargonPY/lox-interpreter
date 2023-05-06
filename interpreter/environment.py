@@ -67,7 +67,7 @@ of Lox’s nil value. Then we tell the environment to bind the variable to that 
 
 
 class Environment:
-    def __init__(self, parent_env: EnvironmentProtocol | None = None) -> None:
+    def __init__(self, parent_env: EnvironmentProtocol | None = None):
         self.values: Dict[str, object] = {}
         self.parent_env = parent_env  # 'None' is only used by the global environment
 

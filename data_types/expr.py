@@ -35,13 +35,17 @@ class ExprVisitor(ABC):
     def visitCallExpr(self, expr: "Call"):
         pass
 
-    # @abstractmethod
-    # def visitGetExpr(self, expr: "Get"):
-    #     pass
+    @abstractmethod
+    def visitGetExpr(self, expr: "Get"):
+        pass
 
-    # @abstractmethod
-    # def visitSetExpr(self, expr: "Set"):
-    #     pass
+    @abstractmethod
+    def visitSetExpr(self, expr: "Set"):
+        pass
+
+    @abstractmethod
+    def visitThisExpr(self, expr: "This"):
+        pass
 
 
 class Expr(ABC):
@@ -155,7 +159,7 @@ class Variable(Expr):
         return self.variable_name.lexeme
 
     def __hash__(self) -> int:
-        return hash(self.variable_name)
+        return hash(self.variable_name) + id(self)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Variable):
@@ -182,7 +186,7 @@ class Assign(Expr):
         dictionary or as an element in a set.
         """
         # todo fix "__hash__" to match "__eq__", however that will cause another issue it might not match the "Variable" "__hash__", which will break the resolver.
-        return hash(self.variable_name)
+        return hash(self.variable_name) + id(self)
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Assign):
@@ -212,26 +216,55 @@ class Logical(Expr):
         return False
 
 
-# class Get(Expr):
-#     def __init__(self, name: Token, obj: Expr) -> None:
-#         self.name = name
-#         self.obj = obj
+class Get(Expr):
+    def __init__(self, property_name: Token, obj: Expr) -> None:
+        self.property_name = property_name
+        self.obj = obj
 
-#     def accept(self, visitor: ExprVisitor):
-#         return visitor.visitGetExpr(self)
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitGetExpr(self)
 
-#     def __repr__(self) -> str:
-#         return self.name.lexeme + " = " + self.obj.__repr__()
+    def __repr__(self) -> str:
+        return self.property_name.lexeme
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Get):
+            return self.property_name == other.property_name and self.obj == other.obj
+        return False
 
 
-# class Set(Expr):
-#     def __init__(self, name: Token, obj: Expr, value: Expr) -> None:
-#         self.name = name
-#         self.obj = obj
-#         self.value = value
+class Set(Expr):
+    def __init__(self, property_name: Token, obj: Expr, value: Expr) -> None:
+        self.property_name = property_name
+        self.obj = obj
+        self.value = value
 
-#     def accept(self, visitor: ExprVisitor):
-#         return visitor.visitSetExpr(self)
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitSetExpr(self)
 
-#     def __repr__(self) -> str:
-#         return self.name.lexeme + " = " + self.value.__repr__()  # todo change this representation
+    def __repr__(self) -> str:
+        return self.property_name.lexeme + " = " + repr(self.value)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Set):
+            return self.property_name == other.property_name and self.obj == other.obj and self.value == other.value
+        return False
+
+
+class This(Expr):
+    def __init__(self, keyword: Token) -> None:
+        self.keyword = keyword
+
+    def accept(self, visitor: ExprVisitor):
+        return visitor.visitThisExpr(self)
+
+    def __repr__(self) -> str:
+        return repr(self.keyword)
+
+    def __hash__(self) -> int:
+        return hash(self.keyword) + id(self)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, This):
+            return self.keyword == other.keyword
+        return False

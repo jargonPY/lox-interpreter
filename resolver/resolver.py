@@ -1,4 +1,5 @@
-from typing import Protocol, Dict
+from typing import Protocol, Dict, cast
+from enum import Enum
 from data_types.expr import *
 from data_types.stmt import *
 from data_types.lexical_token import Token
@@ -40,6 +41,14 @@ Resolution steps:
    and is if it uses itself as the initializer.
 """
 
+
+class FunctionType(Enum):
+    NONE = 0
+    FUNCTION = 1
+    INITIALIZER = 2
+    METHOD = 3
+
+
 # The boolean value represents whether the variable has been initialized yet.
 # Used to check if the variable refers to itself in the initializer.
 Scope = Dict[str, bool]
@@ -56,6 +65,7 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.error_reporter = error_reporter
         self.scopes: Stack[Scope] = Stack()
         self.resolved_local_vars: ResolvedVars = {}
+        self.current_function = FunctionType.NONE  # Stores the type of function that is being resolved
 
     def declare(self, variable_name: Token) -> None:
         """
@@ -116,13 +126,18 @@ class Resolver(ExprVisitor, StmtVisitor):
 
             index -= 1
 
-    def resolve_function(self, function: FunctionStmt) -> None:
+    def resolve_function(self, function: FunctionStmt, function_type: FunctionType) -> None:
+        enclosing_function_type = self.current_function
+        self.current_function = function_type
+
         self.begin_scope()
         for param in function.params:
             self.declare(param)
             self.define(param)
         self.resolve(function.body)
         self.end_scope()
+
+        self.current_function = enclosing_function_type
 
     def begin_scope(self) -> None:
         self.scopes.push({})
@@ -144,7 +159,7 @@ class Resolver(ExprVisitor, StmtVisitor):
 
         self.declare(stmt.func_name)
         self.define(stmt.func_name)
-        self.resolve_function(stmt)
+        self.resolve_function(stmt, FunctionType.FUNCTION)
 
     def visitVarStmt(self, stmt: "VarStmt") -> None:
         """
@@ -204,7 +219,13 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.resolve_expression(stmt.expression)
 
     def visitReturnStmt(self, stmt: "ReturnStmt") -> None:
+        if self.current_function == FunctionType.NONE:
+            self.error_reporter.set_error(1, "Can't return from top-level code.")
+
         if stmt.value is not None:
+            if self.current_function == FunctionType.INITIALIZER:
+                self.error_reporter.set_error(1, "Can't return a value from an initializer.")
+
             self.resolve_expression(stmt.value)
 
     def visitWhileStmt(self, stmt: "WhileStmt") -> None:
@@ -233,3 +254,36 @@ class Resolver(ExprVisitor, StmtVisitor):
 
         for argument in expr.arguments:
             self.resolve_expression(argument)
+
+    def visitClassStmt(self, stmt: "ClassStmt") -> None:
+        """
+        It’s not common to declare a class as a local variable, but Lox permits it, so we need to handle it correctly.
+        """
+        self.declare(stmt.name)
+        self.define(stmt.name)
+
+        # Create a new scope that will be used as the parent environment for the methods
+        self.begin_scope()
+        # Store "this" as if it were a local variable
+        current_scope = cast(Scope, self.scopes.peek())
+        current_scope["this"] = True
+
+        for method in stmt.methods:
+            if method.func_name.lexeme == "init":
+                self.resolve_function(method, FunctionType.INITIALIZER)
+            else:
+                self.resolve_function(method, FunctionType.METHOD)
+            # self.resolve_function(method)
+
+        self.end_scope()
+
+    def visitThisExpr(self, expr: "This") -> None:
+        # Looks for and resolves "this" to the parent scope defined in "visitClassStmt"
+        self.resolve_local(expr, expr.keyword)
+
+    def visitGetExpr(self, expr: "Get") -> None:
+        self.resolve_expression(expr.obj)
+
+    def visitSetExpr(self, expr: "Set") -> None:
+        self.resolve_expression(expr.obj)
+        self.resolve_expression(expr.value)

@@ -142,15 +142,20 @@ class Parser:
         This gets it back to trying to parse the beginning of the next statement or declaration.
         """
         if self.next_token_matches([TokenType.VAR]):
+            self.consume_token()  # Consumes the 'var' token
             return self.varDeclaration()
 
         if self.next_token_matches([TokenType.FUN]):
+            self.consume_token()  # Consumes the 'fun' token
             return self.function()
+
+        if self.next_token_matches([TokenType.CLASS]):
+            self.consume_token()  # Consumes the 'class' token
+            return self.classDeclaration()
 
         return self.statement()
 
     def varDeclaration(self) -> Stmt:
-        self.consume_token()  # Consumes the 'var' token
         variable_name = self.consume_token_if_matching(TokenType.IDENTIFIER, "Expect variable name.")
 
         initializer = None
@@ -161,7 +166,23 @@ class Parser:
         self.consume_token_if_matching(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return VarStmt(variable_name, initializer)
 
-    def function(self) -> Stmt:
+    def classDeclaration(self) -> Stmt:
+        """
+        classDecl -> "class" IDENTIFIER "{" function* "}" ;
+        """
+
+        class_name = self.consume_token_if_matching(TokenType.IDENTIFIER, "Expect class name.")
+        self.consume_token_if_matching(TokenType.LEFT_BRACE, "Expect '{' after class name.")
+
+        methods = []
+        # Parse class methods
+        while not self.next_token_matches([TokenType.RIGHT_BRACE]) and not self.isEOF():
+            methods.append(self.function())
+
+        self.consume_token_if_matching(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
+        return ClassStmt(class_name, methods)
+
+    def function(self) -> FunctionStmt:
         """
         funDecl -> "fun" function ;
 
@@ -176,7 +197,6 @@ class Parser:
         not an expression.
         """
 
-        self.consume_token()  # Consumes the 'fun' token
         func_name = self.consume_token_if_matching(TokenType.IDENTIFIER, "Expect function name.")
 
         self.consume_token_if_matching(TokenType.LEFT_PAREN, "Expect '(' after function name.")
@@ -279,6 +299,7 @@ class Parser:
             self.consume_token()
             initializer = None
         elif self.next_token_matches([TokenType.VAR]):
+            self.consume_token()
             initializer = self.varDeclaration()
         else:
             # Wrap the expression wrap it in an expression statement so that the initializer is always of type 'Stmt'
@@ -380,6 +401,12 @@ class Parser:
         Note assignment is considered an expression.
 
         assignment -> IDENTIFIER "=" assignment | logic_or;
+
+        Updated assignment expression grammar:
+
+        assignment -> (call ".")? IDENTIFIER "=" assignment | logic_or;
+
+        Extends the rule for assignment to allow dotted identifiers on the left-hand side.
         """
         expr = self.logic_or()
 
@@ -388,8 +415,10 @@ class Parser:
             value = self.assignment()
 
             if isinstance(expr, Variable):
-                variable_name = expr.variable_name
-                return Assign(variable_name, value)
+                return Assign(expr.variable_name, value)
+
+            if isinstance(expr, Get):
+                return Set(expr.property_name, expr.obj, value)
 
             raise ParseError(equals, INVALID_ASSIGNMENT)
 
@@ -482,13 +511,26 @@ class Parser:
         Similar to parsing infix operators. First parse the primary expression, the "left operand" to
         the call. Then each time there is a '(' call 'finish_call` using the previously parsed expression
         as the callee. Then loop to see if the result itself is called.
-        """
-        expr = self.primary()
 
+        Updated call expression grammar:
+
+        call -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
+
+        The "Get" expression, an expression followed by . and an identifier reads the property with that name
+        from the object the expression evaluates to. The "." has the same precedence has the parentheses in a
+        call expression so they are put combined in the same grammar rule.
+        """
+        expr = self.grouping()
+
+        # This while loop corresponds to the "*" (zero or more occurences) in the grammar rule.
         while True:
             if self.next_token_matches([TokenType.LEFT_PAREN]):
                 self.consume_token()  # Consume '('
                 expr = self.finish_call(expr)
+            elif self.next_token_matches([TokenType.DOT]):
+                self.consume_token()  # Consume '.'
+                property_name = self.consume_token_if_matching(TokenType.IDENTIFIER, "Expect property name after '.'.")
+                expr = Get(property_name, expr)
             else:
                 break
 
@@ -543,5 +585,8 @@ class Parser:
 
         if self.next_token_matches([TokenType.NUMBER, TokenType.STRING]):
             return Literal(self.consume_token().literal)
+
+        if self.next_token_matches([TokenType.THIS]):
+            return This(self.consume_token())
 
         raise ParseError(self.consume_token(), "Expect expression.")

@@ -4,10 +4,11 @@ from data_types.stmt import FunctionStmt
 from interpreter.protocols import EnvironmentProtocol
 from interpreter.environment import Environment
 from data_types.errors import ReturnException
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from interpreter.interpreter import Interpreter
+    from interpreter.lox_class import LoxInstance
 
 
 class LoxCallable(ABC):
@@ -30,6 +31,20 @@ class LoxFunction(LoxCallable):
         # This is the environment that is active when the function is declared not when its called.
         # It represents the lexical scope surrounding the function delcaration.
         self.closure = closure
+
+    def bind(self, instance: "LoxInstance") -> "LoxFunction":
+        """
+        Takes a "LoxFunction" object (a class method) and returns a new instance of "LoxFunction" where
+        the parent environment (closure) defines "this" which points to a class instance.
+        """
+        # ? Why define a new "Environment" rather than use "self.closure" directly?
+        # * "self.closure" is an enviroment that is potentially shared by many functions and refers to
+        # * the original environment itself. Mutating it will introduce "this" in the parent environment
+        # * rather than the enclosing environment of the method.
+        # environment = Environment(cast(Environment, self.closure))
+        environment = Environment(self.closure)
+        environment.define("this", instance)
+        return LoxFunction(self.func_declaration, environment)
 
     def call(self, interpreter: "Interpreter", arguments: list[object]) -> object:
         """
