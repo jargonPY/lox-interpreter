@@ -9,7 +9,7 @@ from interpreter.protocols import EnvironmentProtocol
 from interpreter.environment import Environment
 from interpreter.helpers import is_operand_of_type_float, stringify, is_equal
 from interpreter.lox_callable import LoxCallable, LoxFunction, Clock
-from interpreter.lox_class import LoxClass, LoxInstance
+from interpreter.lox_class import LoxClass, LoxInstance, LoxListInstance
 from resolver.resolver import ResolvedVars
 
 """
@@ -367,37 +367,47 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visitGroupingExpr(self, expr: "Grouping") -> object:
         return expr.expression
 
+    # def visitLoxListIndexExpr(self, expr: "LoxListIndex") -> object:
+    #     lox_list = self.evaluate(expr.lox_list)
+
+    #     if not isinstance(lox_list, list):
+    #         return None
+    #         # raise LoxRuntimeError(lox_list, "TypeError object is not subscriptable")
+
+    #     # * this can be used for any "indexable" object
+    #     # if not hasattr(lox_list, "__getitem__"):
+    #     #     return None
+    #     # raise LoxRuntimeError(lox_list, "TypeError object is not subscriptable")
+
+    #     index = self.evaluate(expr.index)
+
+    #     # * all Lox number literals are converted to Python floats
+    #     if not isinstance(index, float):
+    #         return None
+    #         # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
+
+    #     if len(lox_list) <= index:
+    #         return None
+    #         # raise LoxRuntimeError(lox_list, "IndexError list index out of range")
+
+    #     return lox_list[int(index)]
+
     def visitLoxListIndexExpr(self, expr: "LoxListIndex") -> object:
         lox_list = self.evaluate(expr.lox_list)
 
-        if not isinstance(lox_list, list):
+        if not isinstance(lox_list, LoxListInstance):
             return None
-            # raise LoxRuntimeError(lox_list, "TypeError object is not subscriptable")
-
-        # * this can be used for any "indexable" object
-        # if not hasattr(lox_list, "__getitem__"):
-        #     return None
-        # raise LoxRuntimeError(lox_list, "TypeError object is not subscriptable")
 
         index = self.evaluate(expr.index)
 
-        # * all Lox number literals are converted to Python floats
-        if not isinstance(index, float):
-            return None
-            # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
-
-        if len(lox_list) <= index:
-            return None
-            # raise LoxRuntimeError(lox_list, "IndexError list index out of range")
-
-        return lox_list[int(index)]
+        return lox_list.get_item(index)
 
     def visitLoxListExpr(self, expr: "LoxList") -> object:
         lox_list = []
         for item in expr.items:
             value = self.evaluate(item)
             lox_list.append(value)
-        return lox_list
+        return LoxListInstance(lox_list)
 
     def visitLiteralExpr(self, expr: "Literal") -> object:
         return expr.value

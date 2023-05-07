@@ -71,3 +71,69 @@ class LoxInstance:
 
     def __repr__(self) -> str:
         return self.lox_class.class_name + " " + "instance"
+
+
+class LoxListInstance(LoxInstance):
+    def __init__(self, items: list[object]) -> None:
+        self.lox_list = items
+        self.methods = {"append": LoxListAppendItem, "delete": LoxListDeleteItem}
+
+    def get(self, property_name: Token):
+        if property_name.lexeme in self.methods:
+            return self.methods[property_name.lexeme](self)
+
+        raise LoxRuntimeError(property_name, f"Undefined property {property_name.lexeme}")
+
+    def get_item(self, index: object):
+        if not isinstance(index, float):
+            return None
+            # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
+
+        if len(self.lox_list) <= index:
+            return None
+            # raise LoxRuntimeError(lox_list, "IndexError list index out of range")
+
+        return self.lox_list[int(index)]
+
+    def __repr__(self) -> str:
+        return repr(self.lox_list)
+
+
+class LoxListAppendItem(LoxCallable):
+    def __init__(self, lox_list_instance: "LoxListInstance") -> None:
+        self.lox_list_instance = lox_list_instance
+
+    def call(self, interpreter: "Interpreter", arguments: list[object]) -> object:
+        self.lox_list_instance.lox_list.extend(arguments)
+        return None
+
+    def arity(self) -> int:
+        # Only allows for appending one item at a time.
+        return 1
+
+    def __repr__(self) -> str:
+        return "<LoxListAppendItem method append>"
+
+
+class LoxListDeleteItem(LoxCallable):
+    def __init__(self, lox_list_instance: "LoxListInstance") -> None:
+        self.lox_list_instance = lox_list_instance
+
+    def call(self, interpreter: "Interpreter", arguments: list[object]) -> object:
+        index = arguments[0]
+        if not isinstance(index, float):
+            return None
+            # raise LoxRuntimeError(property_name, TypeError: the argument to pop() must be an integer.)
+        if len(self.lox_list_instance.lox_list) <= index:
+            # raise LoxRuntimeError(property_name, IndexError: the index provided is longer than the list.)
+            return None
+
+        removed_item = self.lox_list_instance.lox_list.pop(int(index))
+        return removed_item
+
+    def arity(self) -> int:
+        # Only allows for appending one item at a time.
+        return 1
+
+    def __repr__(self) -> str:
+        return "<LoxListDeleteItem method delete>"
