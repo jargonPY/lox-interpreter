@@ -588,7 +588,6 @@ class Parser:
 
         return self.lox_list_index()
 
-    # todo "LoxListIndex" needs to have a reference to list itself
     def lox_list_index(self) -> Expr:
         """
         lox_list_index -> lox_list ( "[" logic_or "]" )* ;
@@ -598,6 +597,10 @@ class Parser:
 
         but not for:
             func()[0];
+
+        # todo add support for multiple indexing:
+            var x = [[2], [1]];
+            print x[0][0];
         """
 
         expr = self.lox_list()

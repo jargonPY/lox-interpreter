@@ -7,6 +7,25 @@ from interpreter.lox_class import LoxInstance
 if TYPE_CHECKING:
     from interpreter.interpreter import Interpreter
 
+# ? Why does "LoxListInstance" inherit from "LoxInstance" ?
+# ? Is it necessary for type checking in the interperter ?
+
+# * Yes, the interperter checks to make sure the object is of type "LoxInstance" in "visitGetExpr" and "visitSetExpr".
+# * So inheritance here is used only for proper typing rather than sharing functionality.
+
+"""
+A potential fix it to follow the same pattern used for 'LoxCallable' and 'LoxFunction'.
+
+'LoxCallable' is an ABC that is used as a type for any callable object including:
+
+- User defined functions.
+- Native functions.
+- Classes.
+
+'LoxFunction' is specifically a runtime wrapper for user defined functions. Its not used
+for native functions.
+"""
+
 
 class LoxListInstance(LoxInstance):
     def __init__(self, items: list[object]) -> None:
@@ -18,6 +37,9 @@ class LoxListInstance(LoxInstance):
             return self.methods[property_name.lexeme](self)
 
         raise LoxRuntimeError(property_name, f"Undefined property {property_name.lexeme}")
+
+    def set(self, property_name: Token, value: object):
+        raise LoxRuntimeError(property_name, "AttributeError: Can not set properties on LoxList object.")
 
     def get_item(self, index: object):
         """
@@ -73,7 +95,6 @@ class LoxListDeleteItem(LoxCallable):
         return removed_item
 
     def arity(self) -> int:
-        # Only allows for appending one item at a time.
         return 1
 
     def __repr__(self) -> str:
