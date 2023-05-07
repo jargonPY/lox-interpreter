@@ -56,6 +56,7 @@ class LoxListInstance(LoxInstance):
 
         # * all Lox number literals are converted to Python floats
         if not isinstance(index, float):
+            # todo update 'LoxRuntimeError' to allow for optional token
             raise RuntimeError()
             # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
 

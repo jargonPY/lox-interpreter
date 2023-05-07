@@ -597,24 +597,24 @@ class Parser:
 
         but not for:
             func()[0];
-
-        # todo add support for multiple indexing:
-            var x = [[2], [1]];
-            print x[0][0];
         """
 
         expr = self.lox_list()
 
-        # todo change the definition of the grammar rule to acommedate both
-        if self.next_token_matches([TokenType.LEFT_PAREN]):
-            self.consume_token()
-            expr = self.finish_call(expr)
+        # While loop allows for multiple indexing (ex. var x = [[2], [1]];, print x[0][0];).
+        while True:
+            # todo change the definition of the grammar rule to acommedate both
+            if self.next_token_matches([TokenType.LEFT_PAREN]):
+                self.consume_token()
+                expr = self.finish_call(expr)
 
-        if self.next_token_matches([TokenType.LEFT_BRACKET]):
-            self.consume_token()  # Consume '['
-            index = self.logic_or()
-            self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list index.")
-            return LoxListIndex(expr, index)
+            if self.next_token_matches([TokenType.LEFT_BRACKET]):
+                self.consume_token()  # Consume '['
+                index = self.logic_or()
+                self.consume_token_if_matching(TokenType.RIGHT_BRACKET, "Expect ']' after list index.")
+                expr = LoxListIndex(expr, index)
+            else:
+                break
 
         return expr
 

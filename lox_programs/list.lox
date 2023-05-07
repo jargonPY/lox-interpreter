@@ -12,4 +12,7 @@ print printHello()[0];
 var x = [100];
 print x;
 
-x[0] = 100;
+var x = [[2], [1]];
+print x[0][0];
+
+print [[printHello], [printHello]][1][0]();
