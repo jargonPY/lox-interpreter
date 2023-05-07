@@ -9,7 +9,8 @@ from interpreter.protocols import EnvironmentProtocol
 from interpreter.environment import Environment
 from interpreter.helpers import is_operand_of_type_float, stringify, is_equal
 from interpreter.lox_callable import LoxCallable, LoxFunction, Clock
-from interpreter.lox_class import LoxClass, LoxInstance, LoxListInstance
+from interpreter.lox_class import LoxClass, LoxInstance
+from interpreter.lox_list import LoxListInstance
 from resolver.resolver import ResolvedVars
 
 """
