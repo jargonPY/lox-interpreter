@@ -85,6 +85,11 @@ class LoxListInstance(LoxInstance):
         raise LoxRuntimeError(property_name, f"Undefined property {property_name.lexeme}")
 
     def get_item(self, index: object):
+        """
+        Used by 'visitLoxListIndexExpr' to get an item at a given index.
+        """
+
+        # * all Lox number literals are converted to Python floats
         if not isinstance(index, float):
             return None
             # raise LoxRuntimeError(lox_list, f"TypeError list indices must be integers not {type(index)}")
