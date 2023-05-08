@@ -7,8 +7,6 @@ from data_types.stmt import *
 from data_types.error_messages import *
 
 """
-todo:
-
 1. Many calls to 'self.next_token_matches()' are followed by 'self.consume_token()'. Add a helper that does both 'self.next_token_matches_and_consumes()'.
 2. Add the grammar rule definition as part comments for each function.
 """
