@@ -28,3 +28,5 @@ class ReturnFromInit {
 
 var returnedValue = ReturnFromInit();
 print returnedValue.init();
+
+print ReturnFromInit.hello;
