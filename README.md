@@ -2,7 +2,7 @@
 
 This repository contains a Python implementation of an interpreter for the lox programing language described in [Crafting Interpreters](https://craftinginterpreters.com).
 
-This implementation extends the original grammaar to support:
+This implementation extends the original grammar to support:
 
 - Ternary operators.
 - List literal data type.
